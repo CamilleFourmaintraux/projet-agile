@@ -13,6 +13,10 @@ public class Game extends Controls {
   // private final int PIXEL_SIZE = PIXEL.length(); // we'll need this in the calculations of the movements
   private final int JUMP_HEIGHT = 9;
   private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 30;
+  
+
+  private final int HEIGHT = 50;
+  private final int WEIGHT = 35;
 
   private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
@@ -282,6 +286,17 @@ public class Game extends Controls {
       displayPlayer();
       sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
     }
+  }
+  
+  protected void ScreenCheck() { //Par défault, limit est à 50
+	  for(int i=0; i<HEIGHT+1; i+=1) {
+		  System.out.print(String.format("%02d", i)+" ");
+	  }
+	  System.out.println();
+	  for(int h=1; h<(WEIGHT+1); h+=1) {
+		  System.out.println(String.format("%02d", h)+" ");
+	  }
+	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+HEIGHT+" en hauteur et "+WEIGHT+" en largeur.");
   }
 
   public static void main(String[] args) {
