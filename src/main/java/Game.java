@@ -16,7 +16,7 @@ public class Game extends Controls {
 
   private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
-  private final String MAPS_DIRECTORY = "assets/maps";
+  private final String MAPS_DIRECTORY = "assets/maps/examples";
 
   /**
    * The number of pixels on the Y-axis between the top of the map and the floor.
