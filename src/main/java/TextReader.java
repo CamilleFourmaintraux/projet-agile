@@ -1,29 +1,28 @@
 package main.java;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 
+/**
+ * Reads a text file.
+ */
 public class TextReader {
+    /**
+     * Gets the content of the text file and returns each line in an `ArrayList`.
+     * If the file doesn't exist, an empty list is returned.
+     * @param path The path to the file.
+     * @return Each line in a list.
+     */
+    public static ArrayList<String> getContent(String path) {
+        ArrayList<String> lines = new ArrayList<>();
 
-    //La méthode getContent récupère le contenu du fichier txt à la position passée en paramètre si il éxiste
-    public ArrayList<String> getContent(String path) throws IOException{
-
-        ArrayList<String> res = new ArrayList<String>();
-
-        File file = new File(path);
-        BufferedReader br = new BufferedReader(new FileReader(file));
-
-        while(br.ready()){
-            res.add(br.readLine());
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            lines.add(reader.readLine());
+        } catch (Exception e) {
+            return new ArrayList<String>();
         }
 
-        br.close();
-        
-        return res;
-
+        return lines;
     }
-
 }

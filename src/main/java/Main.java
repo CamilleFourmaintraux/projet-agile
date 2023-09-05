@@ -5,20 +5,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class Main {
-    
     public static void main(String[] args) throws IOException {
+        String SEP = File.separator;
+        String mainMenuPath = "res"+SEP+"Menu"+SEP+"Menu.txt";
+        ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
 
-        String mainMenuPath = "res"+File.separator+"Menu"+File.separator+"Menu.txt";
-        
-        TextReader tr = new TextReader();
-        ArrayList<String> mainMenu = new ArrayList<>();
-
-        mainMenu = tr.getContent(mainMenuPath);
-
-        for(int i=0;i<mainMenu.size();i++){
+        for (int i = 0; i < mainMenu.size(); i++) {
             System.out.println(mainMenu.get(i));
         }
-
     }
-
 }
