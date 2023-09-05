@@ -1,6 +1,7 @@
 package main.java;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,10 +26,11 @@ public class Game extends Controls {
   private final int MAP_DISTANCE_UNTIL_FLOOR = 14;
 
   private final int JUMP_KEY = 32;
-  // private final int TOP_ARROW_KEY = 17;
-  // private final int BOTTOM_ARROW_KEY = 18;
+  private final int TOP_ARROW_KEY = 17;
+  private final int BOTTOM_ARROW_KEY = 18;
   // private final int RIGHT_ARROW_KEY = 19;
   // private final int LEFT_ARROW_KEY = 20;
+  private final int ENTER = 13;
 
   /**
    * The player's position on the X-axis in the map.
@@ -54,6 +56,17 @@ public class Game extends Controls {
   private boolean gameFinished = false;
 
   /**
+   * Indicate if typing any arrow is autorized
+   */
+
+  private boolean isArrowUsable = false;
+
+  private final int MAX_Y_ARROW_POSITION = 23;
+  private final int MIN_Y_ARROW_POSITION = 19;
+  private final int ArrowXDefault = 75;
+  private int ArrowY = 19;
+
+  /**
    * Starts the game.
    * This function blocks the main thread.
    * When this function stops, it means the game ended.
@@ -62,11 +75,15 @@ public class Game extends Controls {
     enableKeyTypedInConsole(true);
     initializeColors();
     initializeAllMaps();
-    setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap(allMaps.get(0));
-    saveCursorPosition();
-    displayPlayer();
-    restoreCursorPosition();
+
+    clearMyScreen();
+    displayMainMenu();
+
+    //setPlayerSkin(PLAYER_DEFAULT_SKIN);
+    //displayMap(allMaps.get(0));
+    //saveCursorPosition();
+    //displayPlayer();
+    //restoreCursorPosition();
     println("Press 'q' to quit.");
     while (!gameFinished) {
       sleep(100);
@@ -75,11 +92,70 @@ public class Game extends Controls {
     enableKeyTypedInConsole(false);
   }
 
+  /**
+   * Display the main menu.
+   * Arrow up and down can be used to move the cursor.
+   */ 
+  private void displayMainMenu(){
+    isArrowUsable = true;
+    boolean itemSelected = false;
+
+    String SEP = File.separator;
+    String mainMenuPath = "assets"+SEP+"menu"+SEP+"menu.txt";
+    ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
+    for(String line : mainMenu) {
+      println(line);
+    }
+  }
+
+  /**
+   * In the menu, the arrow goes up.
+   */
+  private void increaseArrowPosition(){
+    if(isArrowUsable && ArrowY!=MIN_Y_ARROW_POSITION){
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(" ");
+      restoreCursorPosition();
+      ArrowY--;
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(">");
+      restoreCursorPosition();
+    }
+  }
+
+  /**
+   * In the menu, the arrow goes down.
+   */
+  private void decreaseArrowPosition(){
+    if(isArrowUsable && ArrowY!=MAX_Y_ARROW_POSITION){
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(" ");
+      restoreCursorPosition();
+      ArrowY++;
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(">");
+      restoreCursorPosition();
+    }
+  }
+
   @Override
   protected void keyTypedInConsole(int keyCode) {
     switch (keyCode) {
       case JUMP_KEY:
         jump();
+        break;
+      case TOP_ARROW_KEY:
+        increaseArrowPosition();
+        break;
+      case BOTTOM_ARROW_KEY:
+        decreaseArrowPosition();
+        break;
+      case ENTER:
+
         break;
       case 'q': // 'q' is a `char` and as such it is being translated into its integer form and it gets detected.
         gameFinished = true; // we stop the main loop by setting this to `true`
