@@ -17,7 +17,7 @@ public class Game extends Controls {
 
   private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
-  private final String MAPS_DIRECTORY = "assets/maps";
+  private final String MAPS_DIRECTORY = "assets/maps/examples"; // TODO: remove "examples" folder
 
   /**
    * The number of pixels on the Y-axis between the top of the map and the floor.
@@ -65,6 +65,12 @@ public class Game extends Controls {
   private final int MIN_Y_ARROW_POSITION = 19;
   private final int ArrowXDefault = 75;
   private int ArrowY = 19;
+
+  /**
+   * Can the player jump? By default, it is `true`.
+   * It's necessary to make sure that the player doesn't double-jump.
+   */
+  private boolean canJump = true;
 
   /**
    * Starts the game.
@@ -344,20 +350,39 @@ public class Game extends Controls {
    * @param step
    */
   private void jump() {
-    // going up
-    for (int i = 0; i < JUMP_HEIGHT; i++) {
-      removePlayerFromScreen();
-      playerY -= 1;
-      displayPlayer();
-      sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
+    if (!canJump) {
+      return;
     }
-    // going down
-    for (int i = 0; i < JUMP_HEIGHT; i++) {
-      removePlayerFromScreen();
-      playerY += 1;
-      displayPlayer();
-      sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
-    }
+    canJump = false;
+    /**
+     * So as not to interrupt the normal game execution when jumping,
+     * we execute the code responsible of making the player jump in another thread.
+     * This way, we can do other actions while jumping (like quitting the game or moving the obstacles).
+     */
+    Thread jumpThread = new Thread() {
+      public void run() {
+        try {
+          // going up
+          for (int i = 0; i < JUMP_HEIGHT; i++) {
+            removePlayerFromScreen();
+            playerY -= 1;
+            displayPlayer();
+            Thread.sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
+          }
+          // going down
+          for (int i = 0; i < JUMP_HEIGHT; i++) {
+            removePlayerFromScreen();
+            playerY += 1;
+            displayPlayer();
+            Thread.sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
+          }
+          canJump = true;
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    };
+    jumpThread.start();
   }
 
   public static void main(String[] args) {
