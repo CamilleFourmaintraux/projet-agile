@@ -39,8 +39,9 @@ public final class Utils {
 		  System.out.print(String.format("%02d", i)+" ");
 	  }
 	  System.out.println();
-	  for(int h=1; h<limit+1; h+=1) {
+	  for(int h=1; h<(limit+1)/2; h+=1) {
 		  System.out.println(String.format("%02d", h)+" ");
 	  }
+	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+limit+" et "+limit/2+".");
   }
 }
