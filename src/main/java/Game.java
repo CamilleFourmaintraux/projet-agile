@@ -1,17 +1,18 @@
 package main.java;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Game extends Controls {
-  // private final String PIXEL = "  "; // In reality, a pixel is composed of two spaces and the background is then colored using ANSI
+  private final String ANSI_RESET = "\u001b[0m";
+  private final String ANSI_BG_DEFAULT_COLOR = "\u001b[49m";
+  private final String PIXEL = "  "; // In reality, a pixel is composed of two spaces and the background is then colored using ANSI
   // private final int PIXEL_SIZE = PIXEL.length(); // we'll need this in the calculations of the movements
 
   private final String COLORS_PATH = "assets/0-colors.csv";
-  // private final String PLAYER_PATH = "assets/player.csv";
+  private final String PLAYER_DEFAULT_SKIN = "assets/player.csv";
   private final String MAPS_DIRECTORY = "assets/maps";
 
   private final int JUMP_KEY = 32;
@@ -24,6 +25,7 @@ public class Game extends Controls {
   // private int playerY = 0;
   private ArrayList<Color> allColors = new ArrayList<>();
   private ArrayList<Map> allMaps = new ArrayList<>();
+  private ArrayList<ArrayList<Integer>> playerCurrentMatrix = new ArrayList<>();
 
   /**
    * Since we don't want the main thread to terminate too soon,
@@ -34,12 +36,10 @@ public class Game extends Controls {
 
   public void start() {
     enableKeyTypedInConsole(true);
-    println("current path : " + new File(".").getAbsolutePath());
     initializeColors();
     initializeAllMaps();
-    println("Number of colors : " + allColors.size());
-    println("Number of maps : " + allMaps.size());
-    println("Matrix of this map : " + allMaps.get(0).getGrid());
+    setPlayerSkin(PLAYER_DEFAULT_SKIN);
+    displayMap(allMaps.get(0));
     println("Press 'q' to quit.");
     while (!gameFinished) {
       sleep(100);
@@ -95,7 +95,6 @@ public class Game extends Controls {
     String[] maps = Utils.getAllFilesFromDirectory(MAPS_DIRECTORY);
 
     for (String map : maps) {
-      println("trying to read " + MAPS_DIRECTORY + "/" + map);
       try (BufferedReader reader = new BufferedReader(new FileReader(MAPS_DIRECTORY + "/" + map))) {
         ArrayList<ArrayList<Integer>> grid = new ArrayList<>();
         reader.readLine(); // voluntarily ignoring the header
@@ -112,6 +111,58 @@ public class Game extends Controls {
         allMaps.add(new Map(map.substring(0, map.length()-4), grid));
       } catch (Exception ignore) {}
     }
+  }
+
+  // private ArrayList<ArrayList<Integer>> readMatrix(BufferedReader reader) {
+  //   ArrayList<ArrayList<Integer>> grid = new ArrayList<>();
+  // }
+
+  /**
+   * Initializes the skin of the player.
+   */
+  private void setPlayerSkin(String skin) {
+    playerCurrentMatrix.clear();
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(skin))) {
+      // TODO
+    } catch (Exception ignore) { }
+  }
+
+  /**
+   * Displays a map onto the console.
+   * @param map The map and its matrix.
+   */
+  private void displayMap(Map map) {
+    ArrayList<ArrayList<Integer>> grid = map.getGrid();
+    int mapHeight = grid.size();
+    int mapWidth = grid.get(0).size();
+    for (int lig = 0; lig < mapHeight; lig++) {
+      for (int col = 0; col < mapWidth; col++) {
+        int n = grid.get(lig).get(col);
+        if (n == -1) {
+          printTransparentPixel();
+        } else {
+          printPixel(allColors.get(n));
+        }
+      }
+      println(""); // jump a line
+    }
+  }
+
+  /**
+   * Creates a colored pixel.
+   * @param color The color to use for this pixel.
+   */
+  private void printPixel(Color color) {
+    System.out.print(color.ANSI + PIXEL + ANSI_RESET);
+  }
+
+  /**
+   * Adds an empty space whose background color is the same as the terminal.
+   * The exact color of the console is unknown, but ANSI allows us to use a special character for this.
+   */
+  private void printTransparentPixel() {
+    System.out.print(ANSI_BG_DEFAULT_COLOR + PIXEL + ANSI_RESET);
   }
 
   public static void main(String[] args) {
