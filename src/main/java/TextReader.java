@@ -18,7 +18,10 @@ public class TextReader {
         ArrayList<String> lines = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            lines.add(reader.readLine());
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
         } catch (Exception e) {
             return new ArrayList<String>();
         }
