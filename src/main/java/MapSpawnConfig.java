@@ -33,13 +33,14 @@ public class MapSpawnConfig {
     public static MapSpawnConfig fromCSV(String path, String delimiter) {
         final ArrayList<ObstacleSpawn> list = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            reader.readLine();
             String line = "";
             while ((line = reader.readLine()) != null) {
                 Scanner scanner = new Scanner(line).useDelimiter(",");
 
                 String name = scanner.next();
                 double speed = Double.parseDouble(scanner.next());
-                double y = Double.parseDouble(scanner.next());
+                int y = Integer.parseInt(scanner.next());
                 double delta = Double.parseDouble(scanner.next());
                 
                 ObstacleSpawn obstacle = new ObstacleSpawn(name, speed, y, delta);

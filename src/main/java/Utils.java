@@ -19,6 +19,15 @@ public final class Utils {
   }
 
   /**
+   * Removes the file extension from a file name.
+   * @param fileName The file name.
+   * @return The file name without its extension.
+   */
+  public static String removeFileExtension(String fileName) {
+    return fileName.substring(0, fileName.lastIndexOf("."));
+  }
+
+  /**
    * Gets the names of all files contained within a specific folder.
    * @param folderPath The path to the folder.
    * @return A list of strings, where each element is the name of a file contained in the folder.

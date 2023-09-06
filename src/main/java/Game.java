@@ -17,13 +17,13 @@ public class Game extends Controls {
   /**
    * The number of pixels the player will jump upwards and downwards.
    */
-  private final int JUMP_HEIGHT = 9;
+  private final int JUMP_HEIGHT = 13;
 
   /**
    * The delay between each step of the jump.
    * A delay too low will make the jump look instantaneous or hard to follow.
    */
-  private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 30;
+  private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 80;
   
   /**
    * The minimal height, in characters, for the console so that the game can be played normally.
@@ -40,6 +40,8 @@ public class Game extends Controls {
   private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
   private final String MAPS_DIRECTORY = "assets/maps";
+  private final String OBSTACLES_DIRECTORY = "assets/obstacles";
+  private final String CONFIGS_DIRECTORY = "assets/map-configs";
 
   /**
    * The number of pixels on the Y-axis between the top of the map and the floor.
@@ -68,7 +70,9 @@ public class Game extends Controls {
   private int playerY = MAP_DISTANCE_UNTIL_FLOOR;
 
   private ArrayList<Color> allColors = new ArrayList<>();
-  private HashMap<String, Map> allMaps = new HashMap<String, Map>();
+  private HashMap<String, Map> allMaps = new HashMap<>();
+  private HashMap<String, Obstacle> allObstacles = new HashMap<>();
+  private HashMap<String, MapSpawnConfig> allConfigs = new HashMap<>(); // where, when and how fast the obstacles spawn for each map
   private ArrayList<ArrayList<Integer>> playerCurrentMatrix = new ArrayList<>();
 
   /**
@@ -131,17 +135,74 @@ public class Game extends Controls {
     enableKeyTypedInConsole(true);
     initializeColors();
     initializeAllMaps();
+    initializeAllObstacles();
+    initializeAllConfigs();
     setPlayerSkin(PLAYER_DEFAULT_SKIN);
     displayMap(currentMapName);
     saveCursorPosition();
     displayPlayer();
     restoreCursorPosition();
+    startSpawningObjects();
     println("Press 'q' to quit.");
     while (!gameFinished) {
       sleep(100);
     }
     println("Game was terminated.");
     enableKeyTypedInConsole(false);
+  }
+
+  /**
+   * Spawns the objects for the given map and make them move.
+   * Two separate threads are created during this process.
+   * 
+   * 1. Wait `delta` seconds and then start the second thread
+   * 2. Move the object until it reaches the beginning of the map.
+   * 
+   * TODO: this code doesn't work if the map is not at (0;0)
+   */
+  public void startSpawningObjects() {
+    for (ObstacleSpawn spawn : allConfigs.get(currentMapName).getSpawns()) {
+      Obstacle obstacle = allObstacles.get(spawn.getName());
+      int[] mapDimensions = allMaps.get(currentMapName).getMatrixDimensions();
+      int[] obstacleDimensions = obstacle.getMatrixDimensions();
+      int posX = (mapDimensions[0] - obstacleDimensions[0]) * PIXEL_SIZE;
+      int posY = spawn.getY();
+      Thread movementThread = new Thread() {
+        public void run() {
+          int maxX = obstacleDimensions[0];
+          int x = posX;
+          while (x > maxX) {
+            if (!canJump) {
+              try {
+                x--;
+                Thread.sleep((long)spawn.getSpeed());
+                continue;
+              } catch (InterruptedException ignore) {}
+            }
+            // just to make sure this thread gets the word
+            if (gameFinished) {
+              break;
+            }
+            try {
+              removeElementFromForeground(obstacle.getMatrix(), x, posY, x, posY);
+              x--;
+              displayMatrix(obstacle.getMatrix(), true, x, posY, x, posY);
+              Thread.sleep((long)spawn.getSpeed());
+            } catch (InterruptedException ignore) { }
+            removeElementFromForeground(obstacle.getMatrix(), x, posY, x, posY);
+          }
+        }
+      };
+      // Start the movement thread after its own specific delay (called `delta`).
+      new Thread() {
+        public void run() {
+          try {
+            Thread.sleep((long)(spawn.getDelta() * 1000));
+            movementThread.start();
+          } catch (InterruptedException ignore) { }
+        }
+      }.start();
+    }
   }
 
   /**
@@ -324,6 +385,33 @@ public class Game extends Controls {
   }
 
   /**
+   * Reads all obstacles contained in `OBSTACLES_DIRECTORY`.
+   */
+  private void initializeAllObstacles() {
+    String[] obstacles = Utils.getAllFilesFromDirectory(OBSTACLES_DIRECTORY);
+
+    for (String obstacle : obstacles) {
+      try (BufferedReader reader = new BufferedReader(new FileReader(OBSTACLES_DIRECTORY + "/" + obstacle))) {
+        String obstacleName = obstacle.substring(0, obstacle.length()-4);
+        allObstacles.put(obstacleName, new Obstacle(obstacleName, readMatrix(reader)));
+      } catch (Exception ignore) {}
+    }
+  }
+  
+  /**
+   * Reads all the maps' unique config.
+   * A map config contains where, when and how fast its obstacles spawn.
+   */
+  private void initializeAllConfigs() {
+    String[] configs = Utils.getAllFilesFromDirectory(CONFIGS_DIRECTORY);
+
+    for (String config : configs) {
+      String mapName = config.substring(0, config.indexOf("-"));
+      allConfigs.put(mapName, MapSpawnConfig.fromCSV(CONFIGS_DIRECTORY + "/" + config));
+    }
+  }
+
+  /**
    * Reads a matrix of integers (the grid of a colored element on the map).
    * Useful to get the style of an obstacle, a map and a player skin.
    * Each integer is the index of a color in the pallet.
@@ -366,7 +454,7 @@ public class Game extends Controls {
    * @param map The map and its matrix.
    */
   private void displayMap(String mapName) {
-    ArrayList<ArrayList<Integer>> grid = getMapGrid(mapName);
+    ArrayList<ArrayList<Integer>> grid = getMapMatrix(mapName);
     displayMatrix(grid, false, -1, -1, -1, -1);
   }
 
@@ -375,8 +463,8 @@ public class Game extends Controls {
    * @param index The unique index of this map.
    * @return The grid (a list of lists of integers where each integer is a color).
    */
-  private ArrayList<ArrayList<Integer>> getMapGrid(String mapName) {
-    return allMaps.get(mapName).getGrid();
+  private ArrayList<ArrayList<Integer>> getMapMatrix(String mapName) {
+    return allMaps.get(mapName).getMatrix();
   }
 
   /**
@@ -409,7 +497,7 @@ public class Game extends Controls {
         int n = matrix.get(lig).get(col);
         if (n == -1) {
           if (foreground) {
-            int colorIndexOfBehind = getMapGrid(currentMapName).get(objectY + lig - PIXEL_SIZE).get(objectX / PIXEL_SIZE + col);
+            int colorIndexOfBehind = getMapMatrix(currentMapName).get(objectY + lig - PIXEL_SIZE).get(objectX / PIXEL_SIZE + col);
             if (colorIndexOfBehind == -1) {
               printTransparentPixel();
             } else {
@@ -469,18 +557,34 @@ public class Game extends Controls {
   }
 
   /**
-   * Removes the player from the screen.
+   * Removes the player from the foreground.
+   * It replaces the pixels by those that should be "behind" the player.
    */
   private void removePlayerFromScreen() {
     int absX = getPlayerAbsoluteX();
     int absY = getPlayerAbsoluteY(); // it will get incremented as we remove the player's pixels line by line
+    removeElementFromForeground(playerCurrentMatrix, absX, absY, playerX, playerY);
+  }
+
+  /**
+   * Removes an element from the foreground.
+   * This way, the element shall not be replaced with transparent pixels,
+   * but rather the pixels that should be "behind" the element itself,
+   * from the current background's matrix.
+   * @param matrix The element's matrix to be removed
+   * @param absX The X position where to place the cursor.
+   * @param absY The Y position where to place the cursor.
+   * @param x The X position of the element in the map.
+   * @param y The Y position of the element in the map.
+   */
+  private void removeElementFromForeground(ArrayList<ArrayList<Integer>> matrix, int absX, int absY, int x, int y) {
     moveCursorTo(absX, absY);
-    ArrayList<ArrayList<Integer>> background = getMapGrid(currentMapName);
-    int playerHeight = playerCurrentMatrix.size();
-    int playerWidth = playerCurrentMatrix.get(0).size();
-    for (int line = 0; line < playerHeight; line++) {
-      for (int col = 0; col < playerWidth; col++) {
-        int colorIndex = background.get(playerY + line - PIXEL_SIZE).get(playerX / PIXEL_SIZE + col);
+    ArrayList<ArrayList<Integer>> background = getMapMatrix(currentMapName);
+    int elementHeight = matrix.size();
+    int elementWidth = matrix.get(0).size();
+    for (int line = 0; line < elementHeight; line++) {
+      for (int col = 0; col < elementWidth; col++) {
+        int colorIndex = background.get(y + line - PIXEL_SIZE).get(x / PIXEL_SIZE + col);
         if (colorIndex == -1) {
           printTransparentPixel();
         } else {
