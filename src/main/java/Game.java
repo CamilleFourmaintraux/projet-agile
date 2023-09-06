@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class Game extends Controls {
@@ -67,7 +68,7 @@ public class Game extends Controls {
   private int playerY = MAP_DISTANCE_UNTIL_FLOOR;
 
   private ArrayList<Color> allColors = new ArrayList<>();
-  private ArrayList<Map> allMaps = new ArrayList<>();
+  private HashMap<String, Map> allMaps = new HashMap<String, Map>();
   private ArrayList<ArrayList<Integer>> playerCurrentMatrix = new ArrayList<>();
 
   /**
@@ -117,9 +118,9 @@ public class Game extends Controls {
   private boolean canJump = true;
 
   /**
-   * The index of the current map.
+   * The name of the current map.
    */
-  private int currentMapIndex = 0;
+  private String currentMapName = "desert";
 
   /**
    * Starts the game.
@@ -131,7 +132,7 @@ public class Game extends Controls {
     initializeColors();
     initializeAllMaps();
     setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap(currentMapIndex);
+    displayMap(currentMapName);
     saveCursorPosition();
     displayPlayer();
     restoreCursorPosition();
@@ -190,7 +191,7 @@ public class Game extends Controls {
   private void displayMapSelectionMenu() {
     clearMyScreen();
     setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap(0);
+    displayMap("desert");
     saveCursorPosition();
     displayPlayer();
     restoreCursorPosition();
@@ -316,7 +317,8 @@ public class Game extends Controls {
 
     for (String map : maps) {
       try (BufferedReader reader = new BufferedReader(new FileReader(MAPS_DIRECTORY + "/" + map))) {
-        allMaps.add(new Map(map.substring(0, map.length()-4), readMatrix(reader)));
+        String mapName = map.substring(0, map.length()-4);
+        allMaps.put(mapName, new Map(mapName, readMatrix(reader)));
       } catch (Exception ignore) {}
     }
   }
@@ -363,8 +365,8 @@ public class Game extends Controls {
    * Displays a map onto the console.
    * @param map The map and its matrix.
    */
-  private void displayMap(int index) {
-    ArrayList<ArrayList<Integer>> grid = getMapGrid(index);
+  private void displayMap(String mapName) {
+    ArrayList<ArrayList<Integer>> grid = getMapGrid(mapName);
     displayMatrix(grid, false, -1, -1, -1, -1);
   }
 
@@ -373,8 +375,8 @@ public class Game extends Controls {
    * @param index The unique index of this map.
    * @return The grid (a list of lists of integers where each integer is a color).
    */
-  private ArrayList<ArrayList<Integer>> getMapGrid(int index) {
-    return allMaps.get(index).getGrid();
+  private ArrayList<ArrayList<Integer>> getMapGrid(String mapName) {
+    return allMaps.get(mapName).getGrid();
   }
 
   /**
@@ -407,7 +409,7 @@ public class Game extends Controls {
         int n = matrix.get(lig).get(col);
         if (n == -1) {
           if (foreground) {
-            int colorIndexOfBehind = getMapGrid(currentMapIndex).get(objectY + lig - PIXEL_SIZE).get(objectX / PIXEL_SIZE + col);
+            int colorIndexOfBehind = getMapGrid(currentMapName).get(objectY + lig - PIXEL_SIZE).get(objectX / PIXEL_SIZE + col);
             if (colorIndexOfBehind == -1) {
               printTransparentPixel();
             } else {
@@ -473,7 +475,7 @@ public class Game extends Controls {
     int absX = getPlayerAbsoluteX();
     int absY = getPlayerAbsoluteY(); // it will get incremented as we remove the player's pixels line by line
     moveCursorTo(absX, absY);
-    ArrayList<ArrayList<Integer>> background = getMapGrid(currentMapIndex);
+    ArrayList<ArrayList<Integer>> background = getMapGrid(currentMapName);
     int playerHeight = playerCurrentMatrix.size();
     int playerWidth = playerCurrentMatrix.get(0).size();
     for (int line = 0; line < playerHeight; line++) {
