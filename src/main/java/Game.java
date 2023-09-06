@@ -24,9 +24,17 @@ public class Game extends Controls {
    */
   private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 30;
   
+  /**
+   * The minimal height, in characters, for the console so that the game can be played normally.
+   */
+  private final int MINIMAL_GUI_HEIGHT = 50;
 
-  private final int HEIGHT = 50;
-  private final int WEIGHT = 35;
+  /**
+   * The minimal width, in semi-characters, for the console so that the game can be played normally.
+   * We display each number from "00" up to this value so each number takes two characters (the size of a pixel).
+   * TODO: we might have to use as many characters as there are in `PIXEL_SIZE` to make changing `PIXEL` possible
+   */
+  private final int MINIMAL_GUI_WIDTH = 35;
 
   private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
@@ -43,7 +51,7 @@ public class Game extends Controls {
   private final int BOTTOM_ARROW_KEY = 18;
   // private final int RIGHT_ARROW_KEY = 19;
   // private final int LEFT_ARROW_KEY = 20;
-  private final int ENTER = 13;
+  private final int ENTER_KEY = 13;
 
   /**
    * The player's position on the X-axis in the map.
@@ -70,18 +78,36 @@ public class Game extends Controls {
   private boolean gameFinished = false;
 
   /**
-   * Indicate if typing any arrow is autorized
+   * Indicates if using the arrow keys is authorized.
+   * It's not possible when playing the game, but needed in the menus.
    */
   private boolean isArrowUsable = false;
 
   /**
-   * Determinate the location of the cursor and its limit
+   * The maximum Y coordinate of the selector (`>`) when using the main menu.
    */
   private final int MAX_Y_ARROW_POSITION = 23;
-  private final int MIN_Y_ARROW_POSITION = 19;
-  private final int ArrowXDefault = 75;
-  private int ArrowY = 19;
 
+  /**
+   * The minimum Y coordinate of the selector (`>`) when using the main menu.
+   */
+  private final int MIN_Y_ARROW_POSITION = 19;
+
+  /**
+   * Default X position of the selector (`>`) in the main menu.
+   */
+  private final int ARROW_DEFAULT_X = 75;
+
+  /**
+   * The current Y position of the selector (`>`) in the main menu.
+   */
+  private int arrow_y = 19;
+
+  /**
+   * The current page the user is seeing.
+   * By default, the game starts in the main menu,
+   * but then a different page is used for the game, the credits, etc.
+   */
   private Page currentPage = Page.MAIN_MENU;
 
   /**
@@ -117,8 +143,11 @@ public class Game extends Controls {
     enableKeyTypedInConsole(false);
   }
 
+  /**
+   * Restores the current selector position of the main menu to its minimal value (the first choice).
+   */
   private void restoreSelectorPosition() {
-    ArrowY = MIN_Y_ARROW_POSITION;
+    arrow_y = MIN_Y_ARROW_POSITION;
   }
 
   /**
@@ -168,66 +197,66 @@ public class Game extends Controls {
   }
 
   /**
-   * In the main menu, make the selector go down.
+   * In the main menu, it makes the selector go down.
    */
   private void increaseArrowPosition(){
-    if(isArrowUsable && ArrowY!=MIN_Y_ARROW_POSITION){
+    if(isArrowUsable && arrow_y!=MIN_Y_ARROW_POSITION){
       saveCursorPosition();
-      moveCursorTo(ArrowXDefault, ArrowY);
+      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
       System.out.print(" ");
       restoreCursorPosition();
-      ArrowY--;
+      arrow_y--;
       saveCursorPosition();
-      moveCursorTo(ArrowXDefault, ArrowY);
+      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
       System.out.print(">");    
       restoreCursorPosition();
     }
   }
 
   /**
-   * In the main menu, make the selector go up.
+   * In the main menu, it makes the selector go up.
    */
   private void decreaseArrowPosition(){
-    if(isArrowUsable && ArrowY!=MAX_Y_ARROW_POSITION){
+    if(isArrowUsable && arrow_y!=MAX_Y_ARROW_POSITION){
       saveCursorPosition();
-      moveCursorTo(ArrowXDefault, ArrowY);
+      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
       System.out.print(" ");
       restoreCursorPosition();
-      ArrowY++;
+      arrow_y++;
       saveCursorPosition();
-      moveCursorTo(ArrowXDefault, ArrowY);
+      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
       System.out.print(">");
       restoreCursorPosition();
     }
   }
 
   /**
-   * Enter the selected option.
+   * Enter the selected option in the main menu.
    * 
    * Verify what page is the user,
    * then verify what's the selected option using
    * the Y position of the selector.
    */
-  private void select(){
+  private void select() {
     if(currentPage==Page.CREDITS){
       currentPage = Page.MAIN_MENU;
       displayMainMenu();
     }
     else if(currentPage==Page.MAIN_MENU){
-      if(ArrowY==MIN_Y_ARROW_POSITION){
+      if(arrow_y==MIN_Y_ARROW_POSITION){
         currentPage = Page.MAP_SELECTION_MENU;
         displayMapSelectionMenu();
       }
-      else if(ArrowY==MIN_Y_ARROW_POSITION+3){
+      else if(arrow_y==MIN_Y_ARROW_POSITION+3){
         screenCheck();
       }
-      else if(ArrowY==MAX_Y_ARROW_POSITION){
+      else if(arrow_y==MAX_Y_ARROW_POSITION){
         currentPage = Page.CREDITS;
         displayCredits();
       }
     }
     else if(currentPage==Page.MAP_SELECTION_MENU){
-
+      // TODO.
     }
   }
 
@@ -243,7 +272,7 @@ public class Game extends Controls {
       case BOTTOM_ARROW_KEY:
         decreaseArrowPosition();
         break;
-      case ENTER:
+      case ENTER_KEY:
         select();
         break;
       case 'q': // 'q' is a `char` and as such it is being translated into its integer form and it gets detected.
@@ -503,16 +532,22 @@ public class Game extends Controls {
     jumpThread.start();
   }
   
-  protected void screenCheck() { //Par défault, limit est à 50
+  /**
+   * Executes a little program to see if the user has a big enough console to play with.
+   * It displays numbers both horizontally and vertically
+   * depending on `MINIMAL_GUI_HEIGHT` and `MINIMAL_GUI_WIDTH`.
+   * If the user doesn't see all of the numbers, then the screen isn't big enough.
+   */
+  private void screenCheck() {
     clearMyScreen();
-	  for(int i=0; i<HEIGHT+1; i+=1) {
+	  for(int i=0; i<MINIMAL_GUI_HEIGHT+1; i+=1) {
 		  System.out.print(String.format("%02d", i)+" ");
 	  }
 	  System.out.println();
-	  for(int h=1; h<(WEIGHT+1); h+=1) {
+	  for(int h=1; h<(MINIMAL_GUI_WIDTH+1); h+=1) {
 		  this.println(String.format("%02d", h)+" ");
 	  }
-	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+HEIGHT+" en hauteur et "+WEIGHT+" en largeur.");
+	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+MINIMAL_GUI_HEIGHT+" en hauteur et "+MINIMAL_GUI_WIDTH+" en largeur.");
   }
 
   public static void main(String[] args) {
