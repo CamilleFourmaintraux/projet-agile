@@ -140,6 +140,23 @@ public abstract class GameMenu {
 	}
 
 	/**
+	 * Prints text that looks centered.
+	 * @param text The text to display.
+	 */
+	protected void printCenteredText(String text) {
+		printCenteredText(text, LEFT_MARGIN);
+	}
+
+	/**
+	 * Prints text that looks centered.
+	 * @param text The text to display.
+	 * @param width The half-width of the UI.
+	 */
+	protected void printCenteredText(String text, int width) {
+		Controls.println(" ".repeat(width - text.length() / 2) + text);
+	}
+
+	/**
 	 * Displays a line to explain how to quit.
 	 */
 	protected void displayQuitMessage() {

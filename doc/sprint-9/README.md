@@ -1,42 +1,40 @@
-# Sprint 8
+# Sprint 9
 
 ## Démo + Planification du sprint suivant
 
 ### Ce que nous avons fait durant ce sprint
-* Déplacer obstacle
-* Implementation des collisions 
-* Fonction vérif écran
-* Modif menu sélection map
-
-### Ce que nous allons faire durant le prochain sprint
 * Implementation des collisions
 * Niveau de difficulté 
 * Raccorder le menu au jeu
 
+### Ce que nous allons faire durant le prochain sprint
+* Fin des sprints ?
+
 ## Rétrospective
 
 ### Sur quoi avons nous butté ?
+Lister ici tout ce qui était un peu moins bien que parfait.
 * Avez-vous terminé tout ce que vous vous étiez engagé à faire ?
-* Non, nous n'avons pas réussi à terminer l'implementation des collisions 
-* Petit bug aussi sur le déplacement des obstacles 
+* Non, pas mal de bug sont survenue, problème de collisions et de niveau de difficulté
 
 * Étiez -vous prêts au moment de la démo ?
-* Non, nous n'avons pas pu montrer toutes les taches que nous avons prévu de faire
+* Non, nous avions l'ancienne version du jeu du sprint précédent qui fonctionné, mais celui de ce sprint ne fonctionner pas 
 
 ### PDCA
 * De tous ces éléments quel est celui que vous voulez améliorer ?
-* Corriger tous les bugs intervenus pendant ce sprint
+* regler tout les bug et imprevue survenue 
 
 * Comment pouvez-vous mesurer qu'il s'améliore ?
 * Il faut que chaque membre de l'équipe effectue une tâche de son niveau qu'il soit capable de réaliser pendant le sprint 
 
+
 * Quelles sont toutes les options possible pour l'améliorer ?
-* Meilleurs organisations 
-* Ne pas voir trop grand, réaliser ce qui est réalisable en un sprint 
-* Mieux gérer son temps
+* Mieux gérer notre temps
+* Bien repartir les tâches
+* Mieux planifier les tâches
 
 * Qu'allez-vous tester pour l'améliorer ?
-* Ne pas voir trop grand
+* Bien repartir les taches
 
 # Mémo
-png dans le dossier
+png dans le dossier 

@@ -15,7 +15,7 @@ public class CreditsMenu extends GameMenu {
     drawMainLogo();
     drawSpace(8);
     for (String name : names) {
-      Controls.println(" ".repeat(LEFT_MARGIN - name.length() / 2) + name);
+      printCenteredText(name);
     }
     drawSpace(8);
     displayQuitMessage();

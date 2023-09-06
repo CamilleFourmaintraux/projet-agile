@@ -30,7 +30,7 @@
 * Aussi nous n'avons pas encore implémenté les éléments créer donc on n'a pas pu les tester.
 
 * Comment pouvez-vous mesurer qu'il s'améliore ?
-* 
+* Il faut que chaque membre de l'équipe effectue une tache de son niveau qu'il soit capable de réaliser pendant le sprint 
 
 * Quelles sont toutes les options possible pour l'améliorer ?
 * Comme pour le 1er sprint il faut plus communiquer et apprendre à bien maitriser la méthode scrum cest-à-dire de mieux repartir les us et plus les détailler.
@@ -39,3 +39,4 @@
 * S'habituer et mieux maitriser la méthode scrum
 
 # Mémo
+png dans le dossier

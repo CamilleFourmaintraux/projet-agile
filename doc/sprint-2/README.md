@@ -32,7 +32,7 @@
 * Mieux gérer les taches à accomplir pendant le sprint c'est a dire, faire des taches plus petites pour avoir le temps de gérer les potentiels bugs 
 
 * Comment pouvez-vous mesurer qu'il s'améliore ?
-* 
+* Il faut que chaque membre de l'équipe effectue une tache de son niveau qu'il soit capable de réaliser pendant le sprint 
 
 * Quelles sont toutes les options possible pour l'améliorer ?
 * Avoir une meilleurs organisation
@@ -44,4 +44,4 @@
 * Avoir des taches moin lourd
 
 # Mémo
-
+png dans le dossier

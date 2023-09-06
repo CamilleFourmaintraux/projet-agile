@@ -22,7 +22,7 @@ public class Game extends Controls {
    * The delay between each step of the jump.
    * A delay too low will make the jump look instantaneous or hard to follow.
    */
-  private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 80;
+  private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 40;
   
   /**
    * The minimal height, in characters, for the console so that the game can be played normally.
@@ -103,6 +103,11 @@ public class Game extends Controls {
   private GameMenu currentMenu = null;
 
   /**
+   * The thread responsible for the jump.
+   */
+  private Thread jumpThread = null;
+
+  /**
    * Starts the game.
    * This function blocks the main thread.
    * When this function stops, it means the game ended.
@@ -130,57 +135,92 @@ public class Game extends Controls {
 
   /**
    * Spawns the objects for the given map and make them move.
-   * Two separate threads are created during this process.
-   * 
-   * 1. Wait `delta` seconds and then start the second thread
-   * 2. Move the object until it reaches the beginning of the map.
+   * A separate thread is created during this process.
+   * The object moves until it reaches the beginning of the map.
    * 
    * TODO: this code doesn't work if the map is not at (0;0)
+   * 
+   * @param spawnIndex The index of the spawn configuration of the current map.
    */
-  public void startSpawningObjects() {
-    for (ObstacleSpawn spawn : allConfigs.get(currentMapName).getSpawns()) {
-      Obstacle obstacle = allObstacles.get(spawn.getName());
-      int[] mapDimensions = allMaps.get(currentMapName).getMatrixDimensions();
-      int[] obstacleDimensions = obstacle.getMatrixDimensions();
-      int posX = (mapDimensions[0] - obstacleDimensions[0]) * PIXEL_SIZE;
-      int posY = spawn.getY();
-      Thread movementThread = new Thread() {
-        public void run() {
-          int maxX = obstacleDimensions[0];
-          int x = posX;
-          while (x > maxX) {
-            if (!canJump) {
-              // Stop showing the obstacles when the player is jumping
-              try {
-                x--;
-                Thread.sleep((long)spawn.getSpeed());
-                continue;
-              } catch (InterruptedException ignore) {}
-            }
-            // just to make sure this thread gets the word
-            if (gameFinished) {
+  public void moveObstacle(int spawnIndex) {
+    ObstacleSpawn spawn = allConfigs.get(currentMapName).getSpawns().get(spawnIndex);
+    Obstacle obstacle = allObstacles.get(spawn.getName());
+    long delayBetweenEachStep = (long)(spawn.getSpeed() * 0.15);
+    int[] mapDimensions = allMaps.get(currentMapName).getMatrixDimensions();
+    int[] obstacleDimensions = obstacle.getMatrixDimensions();
+    int playerWidth = playerCurrentMatrix.get(0).size();
+    int playerHeight = playerCurrentMatrix.size();
+    int posX = (mapDimensions[0] - obstacleDimensions[0]) * PIXEL_SIZE;
+    int posY = spawn.getY();
+    Thread movementThread = new Thread() {
+      public void run() {
+        boolean lost = false;
+        boolean quit = false;
+        int maxX = obstacleDimensions[0];
+        int x = posX;
+        while (x > maxX) {
+          // Just to make sure this thread gets the word that the player isn't playing anymore.
+          if (gameFinished || currentMenu != null) {
+            quit = true;
+            break;
+          }
+          // For the player to lose:
+          // Check if the `x` variable is equal to `(playerX + playerWidth) * PIXEL_SIZE` (the last pixel of a line from the player's matrix).
+          // If the player is not colliding with the obstacle, then:
+          // - the Y of the obstacle + its height < playerY
+          // - the Y of the obstacle > playerY + its height
+          if (x == (playerX + playerWidth) * PIXEL_SIZE) {
+            boolean isObstacleAbovePlayer = posY + obstacleDimensions[1] < playerY;
+            boolean isObstacleBelowPlayer = posY > playerY + playerHeight;
+            if (!isObstacleAbovePlayer && !isObstacleBelowPlayer) {
+              lost = true;
+              clearMyScreen();
+              (currentMenu = new GameOverMenu()).display();
               break;
             }
+          }
+
+          // Stop showing the obstacles when the player is jumping
+          if (!canJump) {
             try {
-              removeElementFromForeground(obstacle.getMatrix(), x, posY, x, posY);
               x--;
-              displayMatrix(obstacle.getMatrix(), true, x, posY, x, posY);
-              Thread.sleep((long)spawn.getSpeed());
-            } catch (InterruptedException ignore) { }
+              Thread.sleep(delayBetweenEachStep);
+              continue;
+            } catch (InterruptedException ignore) {}
+          }
+          try {
             removeElementFromForeground(obstacle.getMatrix(), x, posY, x, posY);
+            x--;
+            displayMatrix(obstacle.getMatrix(), true, x, posY, x, posY);
+            Thread.sleep(delayBetweenEachStep);
+          } catch (InterruptedException ignore) { }
+          removeElementFromForeground(obstacle.getMatrix(), x, posY, x, posY);
+        }
+        if (!lost && !quit) {
+          if ((spawnIndex + 1) < allConfigs.get(currentMapName).getSpawns().size()) {
+            moveObstacle(spawnIndex + 1);
+          } else {
+            // the player won
+            clearMyScreen();
+            (currentMenu = new VictoryMenu()).display();
           }
         }
-      };
-      // Start the movement thread after its own specific delay (called `delta`).
-      new Thread() {
-        public void run() {
-          try {
-            Thread.sleep((long)(spawn.getDelta() * 1000));
-            movementThread.start();
-          } catch (InterruptedException ignore) { }
+        if (jumpThread != null) {
+          jumpThread.interrupt();
+          jumpThread = null;
+          canJump = true;
+          playerY = MAP_DISTANCE_UNTIL_FLOOR;
         }
-      }.start();
-    }
+      }
+    };
+    movementThread.start();
+  }
+
+  /**
+   * Starts spawning the objects one by one, starting at index `0`.
+   */
+  public void startSpawningObjects() {
+    moveObstacle(0);
   }
 
   /**
@@ -237,6 +277,7 @@ public class Game extends Controls {
       saveCursorPosition();
       displayPlayer();
       restoreCursorPosition();
+      startSpawningObjects();
     } else {
       switch (selectedPage) {
         case NORMAL_MODE:
@@ -555,7 +596,7 @@ public class Game extends Controls {
      * we execute the code responsible of making the player jump in another thread.
      * This way, we can do other actions while jumping (like quitting the game or moving the obstacles).
      */
-    Thread jumpThread = new Thread() {
+    jumpThread = new Thread() {
       public void run() {
         saveCursorPosition();
         try {
@@ -575,9 +616,7 @@ public class Game extends Controls {
           }
           canJump = true;
           restoreCursorPosition();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
+        } catch (InterruptedException ignore) { }
       }
     };
     jumpThread.start();

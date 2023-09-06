@@ -41,9 +41,8 @@ public class MapSpawnConfig {
                 String name = scanner.next();
                 int speed = Integer.parseInt(scanner.next());
                 int y = Integer.parseInt(scanner.next());
-                double delta = Double.parseDouble(scanner.next());
                 
-                ObstacleSpawn obstacle = new ObstacleSpawn(name, speed, y, delta);
+                ObstacleSpawn obstacle = new ObstacleSpawn(name, speed, y);
                 list.add(obstacle);
                 scanner.close();
             }

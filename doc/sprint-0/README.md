@@ -29,7 +29,7 @@
 * On peut améliorer notre organisation.
 
 * Comment pouvez-vous mesurer qu'il s'améliore ?
-* 
+* Il faut que chaque membre de l'équipe effectue une tache de son niveau qu'il soit capable de réaliser pendant le sprint 
 
 * Quelles sont toutes les options possible pour l'améliorer ?
 * Pour s'améliorer on pourrait plus communiquer, mieux organiser et préciser les tâches, mieux se répartir les taches entre les membres du groupe.
@@ -38,3 +38,4 @@
 * Nous allons tout tester de ce qui a été cité précédemment.
 
 # Mémo
+png dans le dossier
