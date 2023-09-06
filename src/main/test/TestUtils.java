@@ -20,4 +20,10 @@ public class TestUtils {
         assertEquals("\u001b[48;2;0;0;255m", ansiBlueBackground);
     }
 
+    @Test
+    public void testRemoveFileExtension() {
+        assertEquals("test", Utils.removeFileExtension("test.txt"));
+        assertEquals("test", Utils.removeFileExtension("test.java"));
+        assertEquals("test", Utils.removeFileExtension("test.csv"));
+    }
 }
