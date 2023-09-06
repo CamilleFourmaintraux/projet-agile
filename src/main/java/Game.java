@@ -463,7 +463,7 @@ public class Game extends Controls {
 	  }
 	  System.out.println();
 	  for(int h=1; h<(WEIGHT+1); h+=1) {
-		  System.out.println(String.format("%02d", h)+" ");
+		  this.println(String.format("%02d", h)+" ");
 	  }
 	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+HEIGHT+" en hauteur et "+WEIGHT+" en largeur.");
   }
