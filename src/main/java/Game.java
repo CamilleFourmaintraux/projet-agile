@@ -10,19 +10,28 @@ public class Game extends Controls {
   private final String ANSI_RESET = "\u001b[0m";
   private final String ANSI_BG_DEFAULT_COLOR = "\u001b[49m";
   private final String PIXEL = "  "; // In reality, a pixel is composed of two spaces and the background is then colored using ANSI
-  // private final int PIXEL_SIZE = PIXEL.length(); // we'll need this in the calculations of the movements
+  private final int PIXEL_SIZE = PIXEL.length(); // we'll need this in the calculations of the movements
+
+  /**
+   * The number of pixels the player will jump upwards and downwards.
+   */
   private final int JUMP_HEIGHT = 9;
+
+  /**
+   * The delay between each step of the jump.
+   * A delay too low will make the jump look instantaneous or hard to follow.
+   */
   private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 30;
 
-  private final String COLORS_PATH = "assets/0-colors.csv";
+  private final String COLORS_PATH = "assets/0-colors-alternative.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
-  private final String MAPS_DIRECTORY = "assets/maps/examples"; // TODO: remove "examples" folder
+  private final String MAPS_DIRECTORY = "assets/maps";
 
   /**
    * The number of pixels on the Y-axis between the top of the map and the floor.
    * It must be the same on all maps, hence this constant.
    */
-  private final int MAP_DISTANCE_UNTIL_FLOOR = 14;
+  private final int MAP_DISTANCE_UNTIL_FLOOR = 32;
 
   private final int JUMP_KEY = 32;
   // private final int TOP_ARROW_KEY = 17;
@@ -32,15 +41,16 @@ public class Game extends Controls {
 
   /**
    * The player's position on the X-axis in the map.
-   * Should always be the same.
+   * In theory, it should always be the same.
    */
-  private int playerX = 0;
+  private int playerX = 2; // ! MUST BE DIVISIBLE BY `PIXEL_SIZE` AND > 0 !
 
   /**
    * The player's position on the Y-axis in the map.
    * This position is within the map itself, so y=0 means the top of the map, not the top of the GUI.
+   * By default, the player needs to be placed on the floor.
    */
-  private int playerY = 0;
+  private int playerY = MAP_DISTANCE_UNTIL_FLOOR;
 
   private ArrayList<Color> allColors = new ArrayList<>();
   private ArrayList<Map> allMaps = new ArrayList<>();
@@ -60,6 +70,11 @@ public class Game extends Controls {
   private boolean canJump = true;
 
   /**
+   * The index of the current map.
+   */
+  private int currentMapIndex = 0;
+
+  /**
    * Starts the game.
    * This function blocks the main thread.
    * When this function stops, it means the game ended.
@@ -69,7 +84,7 @@ public class Game extends Controls {
     initializeColors();
     initializeAllMaps();
     setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap(allMaps.get(0));
+    displayMap(currentMapIndex);
     saveCursorPosition();
     displayPlayer();
     restoreCursorPosition();
@@ -175,42 +190,68 @@ public class Game extends Controls {
    * Displays a map onto the console.
    * @param map The map and its matrix.
    */
-  private void displayMap(Map map) {
-    ArrayList<ArrayList<Integer>> grid = map.getGrid();
-    displayMatrix(grid);
+  private void displayMap(int index) {
+    ArrayList<ArrayList<Integer>> grid = getMapGrid(index);
+    displayMatrix(grid, false, -1, -1, -1, -1);
   }
 
   /**
-   * Displays a matrix of colors (an image).
-   * @param matrix The matrix of an obstacle, a map or the player.
+   * Gets the matrix of a map.
+   * @param index The unique index of this map.
+   * @return The grid (a list of lists of integers where each integer is a color).
    */
-  private void displayMatrix(ArrayList<ArrayList<Integer>> matrix) {
+  private ArrayList<ArrayList<Integer>> getMapGrid(int index) {
+    return allMaps.get(index).getGrid();
+  }
+
+  /**
+   * Displays a matrix of colors (an image) at either the background or the foreground.
+   * If the image must be drawn on the foreground,
+   * then instead of drawing transparent pixels
+   * that would take the same color as the console,
+   * we paint the corresponding pixel of the background.
+   * 
+   * Choose at what coordinates to start drawing the image.
+   * Use -1 so as not to change the cursor from its current position.
+   * 
+   * <b>Note that a foreground element must be given precise coordinates.</b>
+   * @param matrix The matrix of an obstacle, a map or the player.
+   * @param foreground Is the element on the foreground or the background?
+   * @param cursorX The X-coordinate at which to start drawing the image.
+   * @param cursorY The Y-coordinate at which to start drawing the image.
+   * @param objectX The X-coordinate of the object within the map itself.
+   * @param objectY The Y-coordinate of the object within the map itself.
+   */
+  private void displayMatrix(ArrayList<ArrayList<Integer>> matrix, boolean foreground, int cursorX, int cursorY, int objectX, int objectY) {
+    boolean useCoordinates = cursorX != 1 && cursorY != 1 && objectX != -1 && objectY != -1;
+    if (useCoordinates) {
+      moveCursorTo(cursorX, cursorY);
+    }
     int mapHeight = matrix.size();
     int mapWidth = matrix.get(0).size();
     for (int lig = 0; lig < mapHeight; lig++) {
       for (int col = 0; col < mapWidth; col++) {
         int n = matrix.get(lig).get(col);
         if (n == -1) {
-          printTransparentPixel();
+          if (foreground) {
+            int colorIndexOfBehind = getMapGrid(currentMapIndex).get(objectY + lig - PIXEL_SIZE).get(objectX / PIXEL_SIZE + col);
+            if (colorIndexOfBehind == -1) {
+              printTransparentPixel();
+            } else {
+              printPixel(allColors.get(colorIndexOfBehind));
+            }
+          } else {
+            printTransparentPixel();
+          }
         } else {
           printPixel(allColors.get(n));
         }
       }
       println(""); // jump a line
+      if (useCoordinates) {
+        moveCursorTo(cursorX, ++cursorY); // replaces the cursor on the same X shift, and one line below the previous one
+      }
     }
-  }
-
-  /**
-   * Displays a matrix at specific coordinates.
-   * Useful to place the player and the objects.
-   * It starts drawing the image from the top-left corner.
-   * @param matrix The matrix to draw.
-   * @param posX The X coordinate.
-   * @param posY The Y coordinate.
-   */
-  private void displayMatrix(ArrayList<ArrayList<Integer>> matrix, int posX, int posY) {
-    moveCursorTo(posX, posY);
-    displayMatrix(matrix);
   }
 
   /**
@@ -230,43 +271,50 @@ public class Game extends Controls {
   }
 
   /**
-   * Places the player on the map at the coordinates (`playerX`;`playerY`)
+   * Places the player on the map at the exact player's coordinates.
    */
   private void displayPlayer() {
-    displayMatrix(playerCurrentMatrix, getPlayerAbsoluteX(), getPlayerAbsoluteY());
+    displayMatrix(playerCurrentMatrix, true, getPlayerAbsoluteX(), getPlayerAbsoluteY(), playerX, playerY);
   }
-  
+
   /**
    * Gets the actual X coordinate of the player in the screen.
-   * @return
+   * @return The current X coordinate.
    */
   private int getPlayerAbsoluteX() {
-    return playerX;
+    return playerX + 1;
   }
 
   /**
    * Gets the actual Y coordinate of the player in the screen.
-   * @return The current Y coordinate of the player + the distance between the top of the map and the floor.
+   * @return The current Y coordinate of the player.
    */
   private int getPlayerAbsoluteY() {
-    return MAP_DISTANCE_UNTIL_FLOOR + playerY;
+    return playerY;
   }
 
   /**
    * Removes the player from the screen.
    */
   private void removePlayerFromScreen() {
-    saveCursorPosition();
-    moveCursorTo(getPlayerAbsoluteX(), getPlayerAbsoluteY());
+    int absX = getPlayerAbsoluteX();
+    int absY = getPlayerAbsoluteY(); // it will get incremented as we remove the player's pixels line by line
+    moveCursorTo(absX, absY);
+    ArrayList<ArrayList<Integer>> background = getMapGrid(currentMapIndex);
     int playerHeight = playerCurrentMatrix.size();
     int playerWidth = playerCurrentMatrix.get(0).size();
     for (int line = 0; line < playerHeight; line++) {
       for (int col = 0; col < playerWidth; col++) {
-        printTransparentPixel();
+        int colorIndex = background.get(playerY + line - PIXEL_SIZE).get(playerX / PIXEL_SIZE + col);
+        if (colorIndex == -1) {
+          printTransparentPixel();
+        } else {
+          printPixel(allColors.get(colorIndex));
+        }
       }
       println("");
+      moveCursorTo(absX, ++absY);
     }
-    restoreCursorPosition();
   }
 
   /**
@@ -285,6 +333,7 @@ public class Game extends Controls {
      */
     Thread jumpThread = new Thread() {
       public void run() {
+        saveCursorPosition();
         try {
           // going up
           for (int i = 0; i < JUMP_HEIGHT; i++) {
@@ -301,6 +350,7 @@ public class Game extends Controls {
             Thread.sleep(JUMP_DELAY_BETWEEN_EACH_FRAME);
           }
           canJump = true;
+          restoreCursorPosition();
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
