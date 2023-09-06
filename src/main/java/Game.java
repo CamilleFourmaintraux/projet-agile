@@ -1,6 +1,7 @@
 package main.java;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,8 +23,12 @@ public class Game extends Controls {
    * A delay too low will make the jump look instantaneous or hard to follow.
    */
   private final int JUMP_DELAY_BETWEEN_EACH_FRAME = 30;
+  
 
-  private final String COLORS_PATH = "assets/0-colors-alternative.csv";
+  private final int HEIGHT = 50;
+  private final int WEIGHT = 35;
+
+  private final String COLORS_PATH = "assets/0-colors.csv";
   private final String PLAYER_DEFAULT_SKIN = "assets/skins/amongus.csv";
   private final String MAPS_DIRECTORY = "assets/maps";
 
@@ -34,10 +39,11 @@ public class Game extends Controls {
   private final int MAP_DISTANCE_UNTIL_FLOOR = 32;
 
   private final int JUMP_KEY = 32;
-  // private final int TOP_ARROW_KEY = 17;
-  // private final int BOTTOM_ARROW_KEY = 18;
+  private final int TOP_ARROW_KEY = 17;
+  private final int BOTTOM_ARROW_KEY = 18;
   // private final int RIGHT_ARROW_KEY = 19;
   // private final int LEFT_ARROW_KEY = 20;
+  private final int ENTER = 13;
 
   /**
    * The player's position on the X-axis in the map.
@@ -62,6 +68,21 @@ public class Game extends Controls {
    * Terminate this sleep by setting this variable to `true`.
    */
   private boolean gameFinished = false;
+
+  /**
+   * Indicate if typing any arrow is autorized
+   */
+  private boolean isArrowUsable = false;
+
+  /**
+   * Determinate the location of the cursor and its limit
+   */
+  private final int MAX_Y_ARROW_POSITION = 23;
+  private final int MIN_Y_ARROW_POSITION = 19;
+  private final int ArrowXDefault = 75;
+  private int ArrowY = 19;
+
+  private Page currentPage = Page.MAIN_MENU;
 
   /**
    * Can the player jump? By default, it is `true`.
@@ -96,11 +117,134 @@ public class Game extends Controls {
     enableKeyTypedInConsole(false);
   }
 
+  private void restoreSelectorPosition() {
+    ArrowY = MIN_Y_ARROW_POSITION;
+  }
+
+  /**
+   * Displays the content of an ArrayList<String> line by line.
+   * @param fileContent Each line
+   */
+  private void printMultipleLines(ArrayList<String> fileContent){
+    for(String line : fileContent){
+      println(line);
+    }
+  }
+
+  /**
+   * Displays the main menu.
+   * Arrow up and down can be used to move the cursor.
+   */ 
+  private void displayMainMenu(){
+    restoreSelectorPosition();
+    isArrowUsable = true;
+
+    String SEP = File.separator;
+    String mainMenuPath = "assets"+SEP+"menu"+SEP+"menu.txt";
+    ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
+    printMultipleLines(mainMenu);
+    println("Press 'q' to quit.");
+  }
+
+  /**
+   * Displays the credits menu while selected in the main menu.
+   */
+  private void displayCredits() {
+    isArrowUsable = false;
+
+    String SEP = File.separator;
+    String creditsPath = "assets"+SEP+"menu"+SEP+"credits.txt";
+    ArrayList<String> credits = TextReader.getContent(creditsPath);
+    printMultipleLines(credits);
+  }
+
+  private void displayMapSelectionMenu() {
+    clearMyScreen();
+    setPlayerSkin(PLAYER_DEFAULT_SKIN);
+    displayMap(0);
+    saveCursorPosition();
+    displayPlayer();
+    restoreCursorPosition();
+  }
+
+  /**
+   * In the main menu, make the selector go down.
+   */
+  private void increaseArrowPosition(){
+    if(isArrowUsable && ArrowY!=MIN_Y_ARROW_POSITION){
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(" ");
+      restoreCursorPosition();
+      ArrowY--;
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(">");    
+      restoreCursorPosition();
+    }
+  }
+
+  /**
+   * In the main menu, make the selector go up.
+   */
+  private void decreaseArrowPosition(){
+    if(isArrowUsable && ArrowY!=MAX_Y_ARROW_POSITION){
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(" ");
+      restoreCursorPosition();
+      ArrowY++;
+      saveCursorPosition();
+      moveCursorTo(ArrowXDefault, ArrowY);
+      System.out.print(">");
+      restoreCursorPosition();
+    }
+  }
+
+  /**
+   * Enter the selected option.
+   * 
+   * Verify what page is the user,
+   * then verify what's the selected option using
+   * the Y position of the selector.
+   */
+  private void select(){
+    if(currentPage==Page.CREDITS){
+      currentPage = Page.MAIN_MENU;
+      displayMainMenu();
+    }
+    else if(currentPage==Page.MAIN_MENU){
+      if(ArrowY==MIN_Y_ARROW_POSITION){
+        currentPage = Page.MAP_SELECTION_MENU;
+        displayMapSelectionMenu();
+      }
+      else if(ArrowY==MIN_Y_ARROW_POSITION+3){
+        screenCheck();
+      }
+      else if(ArrowY==MAX_Y_ARROW_POSITION){
+        currentPage = Page.CREDITS;
+        displayCredits();
+      }
+    }
+    else if(currentPage==Page.MAP_SELECTION_MENU){
+
+    }
+  }
+
   @Override
   protected void keyTypedInConsole(int keyCode) {
     switch (keyCode) {
       case JUMP_KEY:
         jump();
+        break;
+      case TOP_ARROW_KEY:
+        increaseArrowPosition();
+        break;
+      case BOTTOM_ARROW_KEY:
+        decreaseArrowPosition();
+        break;
+      case ENTER:
+        select();
         break;
       case 'q': // 'q' is a `char` and as such it is being translated into its integer form and it gets detected.
         gameFinished = true; // we stop the main loop by setting this to `true`
@@ -358,9 +502,21 @@ public class Game extends Controls {
     };
     jumpThread.start();
   }
+  
+  protected void screenCheck() { //Par défault, limit est à 50
+    clearMyScreen();
+	  for(int i=0; i<HEIGHT+1; i+=1) {
+		  System.out.print(String.format("%02d", i)+" ");
+	  }
+	  System.out.println();
+	  for(int h=1; h<(WEIGHT+1); h+=1) {
+		  this.println(String.format("%02d", h)+" ");
+	  }
+	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+HEIGHT+" en hauteur et "+WEIGHT+" en largeur.");
+  }
 
   public static void main(String[] args) {
     Game game = new Game();
-    game.start();
+    game.start(); 
   }
 }
