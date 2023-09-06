@@ -1,0 +1,11 @@
+{
+	"folders": [],
+	"settings": {
+		"java.project.referencedLibraries": [
+			"lib/**/*.jar",
+			"F3\\lib\\jgrapht-core-1.5.1.jar",
+			"F3\\lib\\sae2_02.jar"
+		],
+		"java.debug.settings.onBuildFailureProceed": true
+	}
+}
