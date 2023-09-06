@@ -23,7 +23,7 @@ public class MapSpawnConfig {
      * Reads the CSV file, and for each line it's an obstacle meant to spawn at a specific position and time.
      * The parameters of the CSV file are the following:
      * 1. name of the obstacle, which is the name of the CSV file of this particular obstacle.
-     * 2. the speed at which the obstacle moves from the right to the left. It's an arbitrary number yet to be defined properly. (TODO)
+     * 2. the speed at which the obstacle moves from the right to the left (the delay between each step).
      * 3. the y-shift from the top of the map (so the height of the obstacle)
      * 4. at what time the obstacle is going to spawn after the beginning of the level.
      * @param path The path to the CSV file.
@@ -39,7 +39,7 @@ public class MapSpawnConfig {
                 Scanner scanner = new Scanner(line).useDelimiter(",");
 
                 String name = scanner.next();
-                double speed = Double.parseDouble(scanner.next());
+                int speed = Integer.parseInt(scanner.next());
                 int y = Integer.parseInt(scanner.next());
                 double delta = Double.parseDouble(scanner.next());
                 

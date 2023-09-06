@@ -1,7 +1,6 @@
 package main.java;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,39 +82,6 @@ public class Game extends Controls {
   private boolean gameFinished = false;
 
   /**
-   * Indicates if using the arrow keys is authorized.
-   * It's not possible when playing the game, but needed in the menus.
-   */
-  private boolean isArrowUsable = false;
-
-  /**
-   * The maximum Y coordinate of the selector (`>`) when using the main menu.
-   */
-  private final int MAX_Y_ARROW_POSITION = 23;
-
-  /**
-   * The minimum Y coordinate of the selector (`>`) when using the main menu.
-   */
-  private final int MIN_Y_ARROW_POSITION = 19;
-
-  /**
-   * Default X position of the selector (`>`) in the main menu.
-   */
-  private final int ARROW_DEFAULT_X = 75;
-
-  /**
-   * The current Y position of the selector (`>`) in the main menu.
-   */
-  private int arrow_y = 19;
-
-  /**
-   * The current page the user is seeing.
-   * By default, the game starts in the main menu,
-   * but then a different page is used for the game, the credits, etc.
-   */
-  private Page currentPage = Page.MAIN_MENU;
-
-  /**
    * Can the player jump? By default, it is `true`.
    * It's necessary to make sure that the player doesn't double-jump.
    */
@@ -127,23 +93,34 @@ public class Game extends Controls {
   private String currentMapName = "desert";
 
   /**
+   * The current menu being displayed to the user.
+   * This variable is useful to detect what choice the user made
+   * when pressing the Enter key.
+   * 
+   * Since the only page that doesn't have menus is the game itself,
+   * then if this is `null` it means the user's playing the game.
+   */
+  private GameMenu currentMenu = null;
+
+  /**
    * Starts the game.
    * This function blocks the main thread.
    * When this function stops, it means the game ended.
    */
   public void start() {
+    currentMenu = new MainMenu(); // the player starts with the main menu
     enableKeyTypedInConsole(true);
+
+    println("Chargement...");
+
     initializeColors();
     initializeAllMaps();
     initializeAllObstacles();
     initializeAllConfigs();
-    setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap(currentMapName);
-    saveCursorPosition();
-    displayPlayer();
-    restoreCursorPosition();
-    startSpawningObjects();
-    println("Press 'q' to quit.");
+
+    clearMyScreen();
+    currentMenu.display();
+
     while (!gameFinished) {
       sleep(100);
     }
@@ -173,6 +150,7 @@ public class Game extends Controls {
           int x = posX;
           while (x > maxX) {
             if (!canJump) {
+              // Stop showing the obstacles when the player is jumping
               try {
                 x--;
                 Thread.sleep((long)spawn.getSpeed());
@@ -206,87 +184,34 @@ public class Game extends Controls {
   }
 
   /**
-   * Restores the current selector position of the main menu to its minimal value (the first choice).
+   * Makes the selector go up in the menu.
    */
-  private void restoreSelectorPosition() {
-    arrow_y = MIN_Y_ARROW_POSITION;
-  }
-
-  /**
-   * Displays the content of an ArrayList<String> line by line.
-   * @param fileContent Each line
-   */
-  private void printMultipleLines(ArrayList<String> fileContent){
-    for(String line : fileContent){
-      println(line);
-    }
-  }
-
-  /**
-   * Displays the main menu.
-   * Arrow up and down can be used to move the cursor.
-   */ 
-  private void displayMainMenu(){
-    restoreSelectorPosition();
-    isArrowUsable = true;
-
-    String SEP = File.separator;
-    String mainMenuPath = "assets"+SEP+"menu"+SEP+"menu.txt";
-    ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
-    printMultipleLines(mainMenu);
-    println("Press 'q' to quit.");
-  }
-
-  /**
-   * Displays the credits menu while selected in the main menu.
-   */
-  private void displayCredits() {
-    isArrowUsable = false;
-
-    String SEP = File.separator;
-    String creditsPath = "assets"+SEP+"menu"+SEP+"credits.txt";
-    ArrayList<String> credits = TextReader.getContent(creditsPath);
-    printMultipleLines(credits);
-  }
-
-  private void displayMapSelectionMenu() {
-    clearMyScreen();
-    setPlayerSkin(PLAYER_DEFAULT_SKIN);
-    displayMap("desert");
-    saveCursorPosition();
-    displayPlayer();
-    restoreCursorPosition();
-  }
-
-  /**
-   * In the main menu, it makes the selector go down.
-   */
-  private void increaseArrowPosition(){
-    if(isArrowUsable && arrow_y!=MIN_Y_ARROW_POSITION){
+  private void selectMenuUp() {
+    if (GameMenu.canGoUp()){
       saveCursorPosition();
-      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
+      moveCursorTo(GameMenu.LEFT_X, GameMenu.current_selector_y);
       System.out.print(" ");
       restoreCursorPosition();
-      arrow_y--;
+      GameMenu.current_selector_y--;
       saveCursorPosition();
-      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
+      moveCursorTo(GameMenu.LEFT_X, GameMenu.current_selector_y);
       System.out.print(">");    
       restoreCursorPosition();
     }
   }
 
   /**
-   * In the main menu, it makes the selector go up.
+   * Makes the selector go down in the menu.
    */
-  private void decreaseArrowPosition(){
-    if(isArrowUsable && arrow_y!=MAX_Y_ARROW_POSITION){
+  private void selectMenuDown() {
+    if (GameMenu.canGoDown()) {
       saveCursorPosition();
-      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
+      moveCursorTo(GameMenu.LEFT_X, GameMenu.current_selector_y);
       System.out.print(" ");
       restoreCursorPosition();
-      arrow_y++;
+      GameMenu.current_selector_y++;
       saveCursorPosition();
-      moveCursorTo(ARROW_DEFAULT_X, arrow_y);
+      moveCursorTo(GameMenu.LEFT_X, GameMenu.current_selector_y);
       System.out.print(">");
       restoreCursorPosition();
     }
@@ -300,46 +225,66 @@ public class Game extends Controls {
    * the Y position of the selector.
    */
   private void select() {
-    if(currentPage==Page.CREDITS){
-      currentPage = Page.MAIN_MENU;
-      displayMainMenu();
-    }
-    else if(currentPage==Page.MAIN_MENU){
-      if(arrow_y==MIN_Y_ARROW_POSITION){
-        currentPage = Page.MAP_SELECTION_MENU;
-        displayMapSelectionMenu();
+    Page selectedPage = currentMenu.getSelectedPage();
+
+    clearMyScreen();
+
+    if (selectedPage.isMap()) {
+      currentMenu = null;
+      currentMapName = selectedPage.getMapName();
+      setPlayerSkin(PLAYER_DEFAULT_SKIN);
+      displayMap(currentMapName);
+      saveCursorPosition();
+      displayPlayer();
+      restoreCursorPosition();
+    } else {
+      switch (selectedPage) {
+        case NORMAL_MODE:
+          (currentMenu = new UnknownMenu("Mais tu crois j'ai le temps de coder ça!?\r\nJ'ai besoin de dormir aussi ;(\r\nPar contre on a codé le mode Arcade! Allez zou.")).display();
+          return;
+        case ARCADE_MODE:
+          (currentMenu = new MapSelectionMenu()).display();
+          return;
+        case CHECK_SCREEN:
+          (currentMenu = new ScreenCheckMenu(MINIMAL_GUI_HEIGHT, MINIMAL_GUI_WIDTH, PIXEL_SIZE)).display();
+          return;
+        case CREDITS:
+          (currentMenu = new CreditsMenu()).display();
+          return;
+        default:
+          (currentMenu = new UnknownMenu()).display();
       }
-      else if(arrow_y==MIN_Y_ARROW_POSITION+3){
-        screenCheck();
-      }
-      else if(arrow_y==MAX_Y_ARROW_POSITION){
-        currentPage = Page.CREDITS;
-        displayCredits();
-      }
-    }
-    else if(currentPage==Page.MAP_SELECTION_MENU){
-      // TODO.
     }
   }
 
   @Override
   protected void keyTypedInConsole(int keyCode) {
-    switch (keyCode) {
-      case JUMP_KEY:
+    if (currentMenu != null && currentMenu.hasChoices()) {
+      switch (keyCode) {
+        case TOP_ARROW_KEY:
+          selectMenuUp();
+          return;
+        case BOTTOM_ARROW_KEY:
+          selectMenuDown();
+          return;
+        case ENTER_KEY:
+          select();
+          return;
+      }
+    } else if (currentMenu == null) { // meaing the player is on a map
+      if (keyCode == JUMP_KEY) {
         jump();
-        break;
-      case TOP_ARROW_KEY:
-        increaseArrowPosition();
-        break;
-      case BOTTOM_ARROW_KEY:
-        decreaseArrowPosition();
-        break;
-      case ENTER_KEY:
-        select();
-        break;
-      case 'q': // 'q' is a `char` and as such it is being translated into its integer form and it gets detected.
+        return;
+      }
+    }
+    if (keyCode == (int)'q') {
+      if (currentMenu instanceof MainMenu) {
         gameFinished = true; // we stop the main loop by setting this to `true`
-        break;
+      } else {
+        clearMyScreen();
+        currentMenu = new MainMenu();
+        currentMenu.display();
+      }
     }
   }
 
@@ -636,24 +581,6 @@ public class Game extends Controls {
       }
     };
     jumpThread.start();
-  }
-  
-  /**
-   * Executes a little program to see if the user has a big enough console to play with.
-   * It displays numbers both horizontally and vertically
-   * depending on `MINIMAL_GUI_HEIGHT` and `MINIMAL_GUI_WIDTH`.
-   * If the user doesn't see all of the numbers, then the screen isn't big enough.
-   */
-  private void screenCheck() {
-    clearMyScreen();
-	  for(int i=0; i<MINIMAL_GUI_HEIGHT+1; i+=1) {
-		  System.out.print(String.format("%02d", i)+" ");
-	  }
-	  System.out.println();
-	  for(int h=1; h<(MINIMAL_GUI_WIDTH+1); h+=1) {
-		  this.println(String.format("%02d", h)+" ");
-	  }
-	  System.out.print("L'écran est à la bonne taille si vous pouvez voir les nombres "+MINIMAL_GUI_HEIGHT+" en hauteur et "+MINIMAL_GUI_WIDTH+" en largeur.");
   }
 
   public static void main(String[] args) {

@@ -114,11 +114,18 @@ public class Controls {
 
   /**
    * Deletes everything there is on the console, if it's visible.
-   * It also places the cursor to (0;0).
+   * It also adds an empty line at the beginning.
    */
   protected void clearMyScreen() {
-    System.out.print("\033[2J");
-    moveCursorTo(0,0);
+    // This doesn't work:
+    //System.out.print("\033[2J");
+    //moveCursorTo(0,0);
+    // Desperate solution:
+    for (int i = 80; i >= 0; i--) {
+      moveCursorTo(0, i);
+      System.out.print(" ".repeat(200));
+    }
+    println("");
   }
 
   /**
@@ -148,7 +155,7 @@ public class Controls {
    * 
    * @param content The content to be printed.
    */
-  protected void println(String content) {
+  protected static void println(String content) {
     System.out.print("\r" + content + "\r\n");
   }
 }
