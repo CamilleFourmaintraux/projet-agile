@@ -62,13 +62,17 @@ public class Game extends Controls {
   /**
    * Indicate if typing any arrow is autorized
    */
-
   private boolean isArrowUsable = false;
 
+  /**
+   * Determinate the location of the cursor and its limit
+   */
   private final int MAX_Y_ARROW_POSITION = 23;
   private final int MIN_Y_ARROW_POSITION = 19;
   private final int ArrowXDefault = 75;
   private int ArrowY = 19;
+
+  private Page currentPage = Page.MAIN_MENU;
 
   /**
    * Can the player jump? By default, it is `true`.
@@ -94,7 +98,6 @@ public class Game extends Controls {
     //saveCursorPosition();
     //displayPlayer();
     //restoreCursorPosition();
-    println("Press 'q' to quit.");
     while (!gameFinished) {
       sleep(100);
     }
@@ -102,24 +105,58 @@ public class Game extends Controls {
     enableKeyTypedInConsole(false);
   }
 
-  /**
-   * Display the main menu.
-   * Arrow up and down can be used to move the cursor.
-   */ 
-  private void displayMainMenu(){
-    isArrowUsable = true;
-    boolean itemSelected = false;
+  private void restoreSelectorPosition(){
+    ArrowY = MIN_Y_ARROW_POSITION;
+  }
 
-    String SEP = File.separator;
-    String mainMenuPath = "assets"+SEP+"menu"+SEP+"menu.txt";
-    ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
-    for(String line : mainMenu) {
+  /**
+   * display the content of an ArrayList<String> String per String.
+   * @param fileContent
+   */
+  private void display(ArrayList<String> fileContent){
+    for(String line : fileContent){
       println(line);
     }
   }
 
   /**
-   * In the menu, the arrow goes up.
+   * Display the main menu.
+   * Arrow up and down can be used to move the cursor.
+   */ 
+  private void displayMainMenu(){
+    restoreSelectorPosition();
+    isArrowUsable = true;
+
+    String SEP = File.separator;
+    String mainMenuPath = "assets"+SEP+"menu"+SEP+"menu.txt";
+    ArrayList<String> mainMenu = TextReader.getContent(mainMenuPath);
+    display(mainMenu);
+    println("Press 'q' to quit.");
+  }
+
+  /**
+   * Display the credits menu while selected in the main menu.
+   */
+  private void displayCredits(){
+    isArrowUsable = false;
+
+    String SEP = File.separator;
+    String creditsPath = "assets"+SEP+"menu"+SEP+"credits.txt";
+    ArrayList<String> credits = TextReader.getContent(creditsPath);
+    display(credits);
+  }
+
+  private void displayMapSelectionMenu(){
+    clearMyScreen();
+    setPlayerSkin(PLAYER_DEFAULT_SKIN);
+    displayMap(allMaps.get(0));
+    saveCursorPosition();
+    displayPlayer();
+    restoreCursorPosition();
+  }
+
+  /**
+   * In the main menu, make the selector go down.
    */
   private void increaseArrowPosition(){
     if(isArrowUsable && ArrowY!=MIN_Y_ARROW_POSITION){
@@ -130,13 +167,13 @@ public class Game extends Controls {
       ArrowY--;
       saveCursorPosition();
       moveCursorTo(ArrowXDefault, ArrowY);
-      System.out.print(">");
+      System.out.print(">");    
       restoreCursorPosition();
     }
   }
 
   /**
-   * In the menu, the arrow goes down.
+   * In the main menu, make the selector go up.
    */
   private void decreaseArrowPosition(){
     if(isArrowUsable && ArrowY!=MAX_Y_ARROW_POSITION){
@@ -149,6 +186,36 @@ public class Game extends Controls {
       moveCursorTo(ArrowXDefault, ArrowY);
       System.out.print(">");
       restoreCursorPosition();
+    }
+  }
+
+  /**
+   * Enter the selected option.
+   * 
+   * Verify where page is the user,
+   * then virify what is the selected option using
+   * the Y position of the selector.
+   */
+  private void select(){
+    if(currentPage==Page.CREDITS){
+      currentPage = Page.MAIN_MENU;
+      displayMainMenu();
+    }
+    else if(currentPage==Page.MAIN_MENU){
+      if(ArrowY==MIN_Y_ARROW_POSITION){
+        currentPage = Page.MAP_SELECTION_MENU;
+        displayMapSelectionMenu();
+      }
+      else if(ArrowY==MIN_Y_ARROW_POSITION+3){
+        screenCheck();
+      }
+      else if(ArrowY==MAX_Y_ARROW_POSITION){
+        currentPage = Page.CREDITS;
+        displayCredits();
+      }
+    }
+    else if(currentPage==Page.MAP_SELECTION_MENU){
+
     }
   }
 
@@ -165,7 +232,7 @@ public class Game extends Controls {
         decreaseArrowPosition();
         break;
       case ENTER:
-
+        select();
         break;
       case 'q': // 'q' is a `char` and as such it is being translated into its integer form and it gets detected.
         gameFinished = true; // we stop the main loop by setting this to `true`
@@ -389,7 +456,8 @@ public class Game extends Controls {
     jumpThread.start();
   }
   
-  protected void ScreenCheck() { //Par défault, limit est à 50
+  protected void screenCheck() { //Par défault, limit est à 50
+    clearMyScreen();
 	  for(int i=0; i<HEIGHT+1; i+=1) {
 		  System.out.print(String.format("%02d", i)+" ");
 	  }
@@ -403,5 +471,6 @@ public class Game extends Controls {
   public static void main(String[] args) {
     Game game = new Game();
     game.start(); 
+    //game.screenCheck();
   }
 }
